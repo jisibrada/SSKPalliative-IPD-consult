@@ -2005,11 +2005,7 @@ function renderPatientTable() {
   if(badge) badge.innerText = filtered.length;
 }
 
-const badge = document.getElementById('pt-count-badge');
-  if(badge) badge.innerText = filtered.length;
-} // <--- จบฟังก์ชัน renderPatientTable (ต้องมีอันเดียว)
-
-// --- ฟังก์ชันจัดการปุ่มตั้งค่า (ต้องอยู่นอกฟังก์ชันด้านบน) ---
+// --- ฟังก์ชันจัดการปุ่มตั้งค่า ---
 function openSheetModal() {
   const modal = document.getElementById('settings-modal');
   if (modal) modal.style.display = 'flex';
@@ -2030,18 +2026,16 @@ function saveSettings() {
     alert('กรุณากรอก URL เว็บแอป');
   }
 }
+
 // ══ DATE / WARD FILTER ══
 let activeQuickFilter = 'all';
 
 function setQuickFilter(type) {
   activeQuickFilter = type;
-  // update active button style
   ['all','today','yesterday','week','month'].forEach(id => {
     const btn = document.getElementById('qf-' + id);
     if(btn) btn.classList.toggle('active', id === type);
   });
-  // if custom — driven by date inputs, don't clear them
-  // if preset — set date inputs accordingly
   const today = new Date();
   const fmt = d => d.toISOString().split('T')[0];
   if(type === 'today') {
