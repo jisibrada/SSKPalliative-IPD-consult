@@ -1716,27 +1716,39 @@ let sheetRecords = JSON.parse(localStorage.getItem('pal_sheet_records') || '[]')
 let lastSyncTime = localStorage.getItem('pal_last_sync') || '';
 
 async function syncFromSheet() {
-  if(!sheetUrl) { openSheetModal(); return; }
+  if (!sheetUrl) { openSheetModal(); return; }
   const btn = document.getElementById('sync-btn');
   btn.style.opacity = '0.6';
   btn.style.pointerEvents = 'none';
   showToast('กำลังดึงข้อมูลจาก Google Sheets...', 'load');
+
   try {
-    const response = await fetch(`${sheetUrl}?source=all`);
-    const json = await res.json();
-    if(json.status === 'ok') {
+    // ใช้ sheetUrl ที่เราตั้งค่าไว้ และเรียกข้อมูลจาก Google Script
+    const response = await fetch(sheetUrl, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8',
+      },
+    });
+
+    const json = await response.json();
+
+    if (json.status === 'ok') {
       sheetRecords = json.records || [];
       lastSyncTime = new Date().toLocaleTimeString('th-TH');
       localStorage.setItem('pal_sheet_records', JSON.stringify(sheetRecords));
       localStorage.setItem('pal_last_sync', lastSyncTime);
-      document.getElementById('last-sync-txt').textContent = 'sync ล่าสุด ' + lastSyncTime;
+      
+      const syncTxt = document.getElementById('last-sync-txt');
+      if (syncTxt) syncTxt.textContent = 'sync ล่าสุด ' + lastSyncTime;
+      
       renderDashboard();
-      showToast('ดึงข้อมูลสำเร็จ — ' + json.count + ' รายการ', 'ok');
+      showToast('ดึงข้อมูลสำเร็จ - ' + json.count + ' รายการ', 'ok');
     } else {
-      showToast('เกิดข้อผิดพลาด: ' + (json.message||'ไม่ทราบสาเหตุ'), 'err');
+      throw new Error(json.message || 'ไม่ทราบสาเหตุ');
     }
-  } catch(err) {
-    // mode no-cors จะไม่สามารถอ่าน response ได้ — แนะนำให้ใช้ fetch ปกติ
+  } catch (err) {
+    console.error('Sync Error:', err);
     showToast('ดึงข้อมูลไม่สำเร็จ — ตรวจสอบ URL หรือ CORS setting', 'err');
   } finally {
     btn.style.opacity = '1';
