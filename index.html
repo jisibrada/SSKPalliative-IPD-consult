@@ -1711,7 +1711,7 @@ async function syncFromSheet() {
   btn.style.pointerEvents = 'none';
   showToast('กำลังดึงข้อมูลจาก Google Sheets...', 'load');
   try {
-    const res = await fetch(sheetUrl + '?source=all', { method: 'GET' });
+    const response = await fetch(`${sheetUrl}?source=all`);
     const json = await res.json();
     if(json.status === 'ok') {
       sheetRecords = json.records || [];
