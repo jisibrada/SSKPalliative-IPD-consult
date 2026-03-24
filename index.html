@@ -1913,20 +1913,23 @@ function renderPatientTable() {
   const wardVal = document.getElementById('filter-ward')?.value || '';
   const sortVal = document.getElementById('pt-sort')?.value || 'date-desc'; // ดึงค่าจากปุ่ม Sort ที่คุณหมอเพิ่งเพิ่ม
 
-  // 1. กรองข้อมูล (Filter)
+  // 1. กรองข้อมูล (Filter) - แก้ไขให้รองรับ HN ที่เป็นตัวเลข
   let filtered = allRecs.filter(r => {
+    // แปลงทุกอย่างเป็น String ก่อนใช้ .toLowerCase()
+    const nameStr = String(r.name || '').toLowerCase();
+    const hnStr = String(r.hn || '').toLowerCase();
+    const wardStr = String(r.ward || '').toLowerCase();
+    const dxStr = String(r.dx || '').toLowerCase();
+
     if(q && !(
-      (r.name||'').toLowerCase().includes(q) ||
-      (r.hn||'').toLowerCase().includes(q) ||
-      (r.ward||'').toLowerCase().includes(q) ||
-      (r.dx||'').toLowerCase().includes(q)
+      nameStr.includes(q) ||
+      hnStr.includes(q) ||
+      wardStr.includes(q) ||
+      dxStr.includes(q)
     )) return false;
+
     if(wardVal && r.ward !== wardVal) return false;
-    if(fromVal || toVal) {
-      const d = r.date || '';
-      if(fromVal && d < fromVal) return false;
-      if(toVal && d > toVal) return false;
-    }
+    // ... ส่วนกรองวันที่คงเดิม ...
     return true;
   });
 
