@@ -2006,10 +2006,10 @@ function saveSettings() {
     location.reload();
   } else {
     alert('กรุณากรอก URL เว็บแอป');
-  }
-}  
-
-  // ══ DATE / WARD FILTER ══
+    }
+  } // <--- ปิดส่วน if (url) { ... } else { ... }
+} // <--- บรรทัดที่ 2010: ปิดฟังก์ชัน saveSettings()  
+// ══ DATE / WARD FILTER ══
 let activeQuickFilter = 'all';
 
 function setQuickFilter(type) {
