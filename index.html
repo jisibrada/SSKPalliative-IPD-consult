@@ -1923,8 +1923,7 @@ function renderPatientTable() {
     return true;
   });
 
-  // ⭐️ 2. เรียงลำดับ: ใหม่ไปเก่า (Sort)
-  // เรียงตาม timestamp ถ้าไม่มีให้ใช้ date
+  // 2. เรียงลำดับ: ใหม่ไปเก่า (Sort)
   filtered.sort((a, b) => {
     const timeA = new Date(a.timestamp || a.date);
     const timeB = new Date(b.timestamp || b.date);
@@ -1934,7 +1933,7 @@ function renderPatientTable() {
   const wrap = document.getElementById('pt-table-wrap');
   if (!wrap) return;
 
-  // ⭐️ 3. สร้างตารางและแสดงผลความเร่งด่วน
+  // 3. สร้างตารางและแสดงผลความเร่งด่วน
   let html = `
     <div style="overflow-x:auto;">
       <table style="width:100%; border-collapse:collapse; min-width:800px;">
@@ -1952,7 +1951,6 @@ function renderPatientTable() {
   `;
 
   filtered.forEach(r => {
-    // กำหนด Emoji และสีตามความเร่งด่วน
     let urgencyIcon = "🟢";
     let urgencyLabel = r.urgency || "ปกติ";
     if (urgencyLabel === "Emergency" || urgencyLabel === "ด่วนมาก") urgencyIcon = "🔴";
@@ -1978,8 +1976,34 @@ function renderPatientTable() {
     `;
   });
 
-  html += `</tbody></table></div>`;
+  html += '</tbody></table></div>';
   wrap.innerHTML = html;
+
+  // 4. Update count badge (ส่วนที่เคย Error ผมย้ายมาไว้ข้างในนี้ครับ)
+  const badge = document.getElementById('pt-count-badge');
+  if(badge) badge.innerText = filtered.length;
+}
+
+// ⭐️ ฟังก์ชันจัดการหน้าต่างตั้งค่า (ย้ายออกมาข้างนอกให้ปุ่มคลิกได้)
+function openSheetModal() {
+  const modal = document.getElementById('settings-modal');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeSettings() {
+  const modal = document.getElementById('settings-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+function saveSettings() {
+  const url = document.getElementById('webapp-url')?.value.trim();
+  if (url) {
+    localStorage.setItem('palliative_webapp_url', url);
+    alert('บันทึกการเชื่อมต่อเรียบร้อยแล้ว');
+    location.reload();
+  } else {
+    alert('กรุณากรอก URL เว็บแอป');
+  }
 }
 
   // update count badge
