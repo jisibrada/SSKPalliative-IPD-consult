@@ -1979,12 +1979,15 @@ function renderPatientTable() {
   html += '</tbody></table></div>';
   wrap.innerHTML = html;
 
-  // 4. Update count badge (ส่วนที่เคย Error ผมย้ายมาไว้ข้างในนี้ครับ)
+  // 4. Update count badge
   const badge = document.getElementById('pt-count-badge');
-  if(badge) badge.innerText = filtered.length;
-}
+  if(badge) {
+    badge.innerText = filtered.length;
+  }
+} // ปิดฟังก์ชัน renderPatientTable
 
-// ⭐️ ฟังก์ชันจัดการหน้าต่างตั้งค่า (ย้ายออกมาข้างนอกให้ปุ่มคลิกได้)
+// --- ฟังก์ชันจัดการปุ่มตั้งค่า (ต้องอยู่นอกฟังก์ชันด้านบน) ---
+
 function openSheetModal() {
   const modal = document.getElementById('settings-modal');
   if (modal) modal.style.display = 'flex';
@@ -2004,53 +2007,9 @@ function saveSettings() {
   } else {
     alert('กรุณากรอก URL เว็บแอป');
   }
-}
+}  
 
-  // update count badge
-  const badge = document.getElementById('pt-count-badge');
-  if(badge) {
-    const label = fromVal === toVal && fromVal
-      ? fromVal === new Date().toISOString().split('T')[0] ? 'วันนี้' : fromVal
-      : fromVal && toVal ? `${fromVal} — ${toVal}` : '';
-    badge.textContent = `${filtered.length} ราย${label ? ' · ' + label : ''}`;
-  }
-
-  const wrap = document.getElementById('pt-table-wrap');
-  if(!filtered.length) {
-    wrap.innerHTML = '<div class="empty-state"><div class="empty-icon">🌿</div>' +
-      (q || fromVal || toVal || wardVal ? 'ไม่พบข้อมูลที่ตรงกับเงื่อนไข' :
-       'ยังไม่มีข้อมูลผู้ป่วย — กรอก Consult แล้วบันทึกก่อนครับ') + '</div>';
-    return;
-  }
-  wrap.innerHTML = `
-    <table class="pt-table">
-      <thead>
-        <tr>
-          <th>แหล่งข้อมูล</th><th>ชื่อผู้ป่วย</th><th>HN</th><th>Ward</th>
-          <th>Diagnosis</th><th>PPS</th><th>ECOG</th><th>GoC</th><th>วันที่</th><th></th>
-        </tr>
-      </thead>
-      <tbody>
-        ${filtered.map(r => `
-          <tr>
-            <td><span class="badge ${r._source==='form'?'badge-mauve':'badge-green'}" style="font-size:10px;">${r._source==='form'?'Form':'เว็บ'}</span></td>
-            <td class="bold">${r.name||'-'}</td>
-            <td class="mono">${r.hn||'-'}</td>
-            <td>${r.ward||'-'}</td>
-            <td style="max-width:140px;word-break:break-word;font-size:12px;">${r.dx||'-'}</td>
-            <td>${r.pps?`<span class="badge ${parseInt(r.pps)>=70?'badge-green':parseInt(r.pps)>=40?'badge-amber':'badge-rose'}">${r.pps}%</span>`:'-'}</td>
-            <td class="mono">${r.ecog !== undefined && r.ecog !== '' ? r.ecog : '-'}</td>
-            <td style="font-size:12px;">${r.goc?(r.goc.split(' ')[0]+'…'):'-'}</td>
-            <td class="mono" style="font-size:11px;">${r.date||''}</td>
-            <td>${r._source !== 'form' && r.id ? `<button class="tbl-edit-btn" onclick="openEditModal(${r.id})">แก้ไข</button>` : ''}</td>
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>
-  `;
-}
-
-// ══ DATE / WARD FILTER ══
+  // ══ DATE / WARD FILTER ══
 let activeQuickFilter = 'all';
 
 function setQuickFilter(type) {
