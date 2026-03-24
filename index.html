@@ -1140,7 +1140,7 @@ let symptomVals = {};
 SYMPTOMS.forEach(s => symptomVals[s] = 0);
 
 let records = JSON.parse(localStorage.getItem('pal_records') || '[]');
-let sheetUrl = localStorage.getItem('pal_sheet_url') || 'https://script.google.com/macros/s/AKfycbxCpBDL4fvpc0XCUkQGeRytlRhOkbzAfK9G0b8AYDtY3xYi2Q0B0Lm36T0kENQLxErS/exec';
+let sheetUrl = "https://script.google.com/macros/s/AKfycbxP7q1tiacUlYqnmmopKXEP2bNuJJvXr7fnuqQqHmdCEwMS9ZHgYF3LmsJx2L86709H/exec";
 
 // ══════════════════════════════════
 // INIT
@@ -1671,7 +1671,7 @@ function openSheetModal() {
 }
 function closeModal() { document.getElementById('modal-bg').classList.remove('open'); }
 function saveSheetUrl() {
-  const url = document.getElementById('sheet-url-input').value.trim();
+  const url = "https://script.google.com/macros/s/AKfycbxP7q1tiacUlYqnmmopKXEP2bNuJJvXr7fnuqQqHmdCEwMS9ZHgYF3LmsJx2L86709H/exec";
   if(!url) { showToast('กรุณากรอก URL', 'err'); return; }
   sheetUrl = url;
   localStorage.setItem('pal_sheet_url', sheetUrl);
