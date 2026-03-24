@@ -1312,8 +1312,11 @@ function getRBValue(groupId) {
 // ══ PPS ══
 function renderPPS() {
   const grid = document.getElementById('pps-grid');
+  // เพิ่มบรรทัดนี้เพื่อเช็คว่า ถ้าไม่เจอหน้าจอสำหรับเลือก PPS (เช่น อยู่หน้า Dashboard) ก็ไม่ต้องรันบรรทัดล่าง
+  if (!grid) return; 
+
   grid.innerHTML = PPS_LIST.map(p => `
-    <button class="pps-btn${selectedPPS===p.v?' pps-sel':''}" onclick="selectPPS(${p.v})">
+    <button class="pps-btn${selectedPPS === p.v ? ' pps-sel' : ''}" onclick="selectPPS(${p.v})">
       ${p.l}<small>${p.l === '10%' ? 'ใกล้เสียชีวิต' : p.v >= 70 ? 'ดี' : p.v >= 40 ? 'ปานกลาง' : 'น้อยมาก'}</small>
     </button>
   `).join('');
@@ -1337,15 +1340,21 @@ function updateScore(rangeId, numId) {
 
 // ══ SYMPTOMS ══
 function renderSymptoms() {
-  const grid = document.getElementById('symp-grid');
-  grid.innerHTML = SYMPTOMS.map(s => `
-    <div class="symp-card">
-      <div class="symp-name">${s}</div>
-      <input type="range" min="0" max="10" step="1" value="${symptomVals[s]}"
-        oninput="updateSymp('${s}',this.value)">
-      <div class="symp-val" id="sv-${s}" style="color:${sympColor(symptomVals[s])}">${symptomVals[s]}</div>
-    </div>
-  `).join('');
+    const container = document.getElementById('symptoms-container');
+    // เพิ่มบรรทัดนี้เหมือนที่แก้ PPS เลยครับ
+    if (!container) return; 
+
+    container.innerHTML = SYMPTOMS.map(s => `
+        <div class="symptom-item">
+            <span>${s}</span>
+            <div class="symptom-scales">
+                ${[0, 1, 2, 3].map(v => `
+                    <div class="scale-btn${symptomVals[s] === v ? ' active' : ''}" 
+                         onclick="selectSymptom('${s}', ${v})">${v}</div>
+                `).join('')}
+            </div>
+        </div>
+    `).join('');
 }
 function sympColor(v) {
   if(v <= 3) return 'var(--sage2)';
