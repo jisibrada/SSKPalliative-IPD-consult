@@ -1901,9 +1901,10 @@ function renderDashboard() {
     </div>
   `;
 
-  renderPatientTable();
+ renderPatientTable();
 }
 
+// ══ ฟังก์ชันแสดงตารางผู้ป่วย (รวมทุกอย่างไว้ที่เดียวและล้างส่วนที่เกิน) ══
 function renderPatientTable() {
   populateWardFilter();
   const allRecs = getAllRecords();
@@ -1913,13 +1914,12 @@ function renderPatientTable() {
   const wardVal = document.getElementById('filter-ward')?.value || '';
   const sortVal = document.getElementById('pt-sort')?.value || 'date-desc';
 
-  // 1. กรองข้อมูล (Filter)
+  // 1. กรองข้อมูล
   let filtered = allRecs.filter(r => {
     const nameStr = String(r.name || '').toLowerCase();
     const hnStr = String(r.hn || '').toLowerCase();
     const wardStr = String(r.ward || '').toLowerCase();
     const dxStr = String(r.dx || '').toLowerCase();
-
     if(q && !(nameStr.includes(q) || hnStr.includes(q) || wardStr.includes(q) || dxStr.includes(q))) return false;
     if(wardVal && r.ward !== wardVal) return false;
     if(fromVal || toVal) {
@@ -1930,26 +1930,20 @@ function renderPatientTable() {
     return true;
   });
 
-  // 2. เรียงลำดับ (Sort Logic)
+  // 2. เรียงลำดับ
   filtered.sort((a, b) => {
-    if (sortVal === 'date-desc') {
-      return new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date);
-    } else if (sortVal === 'date-asc') {
-      return new Date(a.timestamp || a.date) - new Date(b.timestamp || b.date);
-    } else if (sortVal === 'pps-asc') {
-      return (parseInt(a.pps) || 100) - (parseInt(b.pps) || 100);
-    } else if (sortVal === 'ward') {
-      return (a.ward || '').localeCompare(b.ward || '', 'th');
-    } else if (sortVal === 'urgency') {
+    if (sortVal === 'date-desc') return new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date);
+    if (sortVal === 'date-asc') return new Date(a.timestamp || a.date) - new Date(b.timestamp || b.date);
+    if (sortVal === 'pps-asc') return (parseInt(a.pps) || 100) - (parseInt(b.pps) || 100);
+    if (sortVal === 'ward') return (a.ward || '').localeCompare(b.ward || '', 'th');
+    if (sortVal === 'urgency') {
       const priority = { "Emergency": 1, "ด่วนมาก": 1, "Urgency": 2, "ด่วน": 2, "ปกติ": 3, "ไม่ด่วน": 3 };
-      const pA = priority[a.urgency] || 4;
-      const pB = priority[b.urgency] || 4;
-      return pA - pB;
+      return (priority[a.urgency] || 4) - (priority[b.urgency] || 4);
     }
     return 0;
   });
 
-  // 3. เริ่มสร้าง HTML สำหรับแสดงผล
+  // 3. สร้าง HTML ตาราง
   const wrap = document.getElementById('pt-table-wrap');
   if (!wrap) return;
 
@@ -1969,39 +1963,39 @@ function renderPatientTable() {
         <tbody style="font-size:13px;">
   `;
 
-  // 4. วนลูปข้อมูลเพื่อสร้างแถวในตาราง
   filtered.forEach(r => {
-    let urgencyIcon = "🟢";
-    let urgencyLabel = r.urgency || "ปกติ";
-    if (["Emergency", "ด่วนมาก"].includes(urgencyLabel)) urgencyIcon = "🔴";
-    else if (["ด่วน", "Urgency"].includes(urgencyLabel)) urgencyIcon = "🟡";
+    let icon = "🟢";
+    if (["Emergency", "ด่วนมาก"].includes(r.urgency)) icon = "🔴";
+    else if (["ด่วน", "Urgency"].includes(r.urgency)) icon = "🟡";
 
-    const dateObj = new Date(r.timestamp || r.date);
-    const dateStr = isNaN(dateObj) ? "-" : dateObj.toLocaleDateString('th-TH', {day:'2-digit', month:'2-digit', year:'2-digit'});
-    const timeStr = isNaN(dateObj) ? "" : dateObj.toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'});
+    let dateDisplay = "-";
+    if (r.timestamp || r.date) {
+      const d = new Date(r.timestamp || r.date);
+      if (!isNaN(d)) {
+        dateDisplay = d.toLocaleDateString('th-TH', {day:'2-digit', month:'2-digit', year:'2-digit'}) + 
+                      '<br><small>' + d.toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'}) + '</small>';
+      }
+    }
 
     html += `
-      <tr style="border-bottom:1px solid var(--border2); vertical-align: middle;">
-        <td style="padding:12px 8px; font-weight:bold;">${urgencyIcon} <span style="font-size:11px;">${urgencyLabel}</span></td>
+      <tr style="border-bottom:1px solid var(--border2);">
+        <td style="padding:12px 8px; font-weight:bold;">${icon} <span style="font-size:11px;">${r.urgency || 'ปกติ'}</span></td>
         <td style="padding:12px 8px;">
           <div style="font-weight:600; color:var(--primary);">${r.name || '-'}</div>
           <div style="font-size:11px; color:#70757a;">HN: ${r.hn || '-'}</div>
         </td>
         <td style="padding:12px 8px;">${r.ward || '-'}</td>
-        <td style="padding:12px 8px; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${r.dx || '-'}</td>
+        <td style="padding:12px 8px; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${r.dx || '-'}</td>
         <td style="padding:12px 8px; text-align:center;">
           <span style="padding:2px 8px; background:#fce8e6; color:#d93025; border-radius:12px; font-weight:bold;">${r.pps || '-'}%</span>
         </td>
-        <td style="padding:12px 8px; font-size:11px; color:#70757a;">
-          ${dateStr}<br>${timeStr}
-        </td>
+        <td style="padding:12px 8px; font-size:11px; color:#70757a;">${dateDisplay}</td>
       </tr>
     `;
   });
 
   html += '</tbody></table></div>';
   wrap.innerHTML = html;
-
   const badge = document.getElementById('pt-count-badge');
   if(badge) badge.innerText = filtered.length;
 }
@@ -2011,12 +2005,10 @@ function openSheetModal() {
   const modal = document.getElementById('settings-modal');
   if (modal) modal.style.display = 'flex';
 }
-
 function closeSettings() {
   const modal = document.getElementById('settings-modal');
   if (modal) modal.style.display = 'none';
 }
-
 function saveSettings() {
   const url = document.getElementById('webapp-url')?.value.trim();
   if (url) {
@@ -2029,30 +2021,11 @@ function saveSettings() {
 }
 
 // ══ DATE / WARD FILTER ══
-let activeQuickFilter = 'all';
-
 function setQuickFilter(type) {
-  activeQuickFilter = type;
-  ['all','today','yesterday','week','month'].forEach(id => {
-    const btn = document.getElementById('qf-' + id);
-    if(btn) btn.classList.toggle('active', id === type);
-  });
   const today = new Date();
   const fmt = d => d.toISOString().split('T')[0];
   if(type === 'today') {
     document.getElementById('filter-date-from').value = fmt(today);
-    document.getElementById('filter-date-to').value = fmt(today);
-  } else if(type === 'yesterday') {
-    const y = new Date(today); y.setDate(y.getDate()-1);
-    document.getElementById('filter-date-from').value = fmt(y);
-    document.getElementById('filter-date-to').value = fmt(y);
-  } else if(type === 'week') {
-    const w = new Date(today); w.setDate(w.getDate()-6);
-    document.getElementById('filter-date-from').value = fmt(w);
-    document.getElementById('filter-date-to').value = fmt(today);
-  } else if(type === 'month') {
-    const m = new Date(today.getFullYear(), today.getMonth(), 1);
-    document.getElementById('filter-date-from').value = fmt(m);
     document.getElementById('filter-date-to').value = fmt(today);
   } else if(type === 'all') {
     document.getElementById('filter-date-from').value = '';
@@ -2062,121 +2035,19 @@ function setQuickFilter(type) {
 }
 
 function populateWardFilter() {
-  const allRecs = getAllRecords();
-  const wards = [...new Set(allRecs.map(r => r.ward).filter(Boolean))].sort();
+  const wards = [...new Set(getAllRecords().map(r => r.ward).filter(Boolean))].sort();
   const sel = document.getElementById('filter-ward');
-  if(!sel) return;
-  const current = sel.value;
-  sel.innerHTML = '<option value="">ทุก Ward</option>' +
-    wards.map(w => `<option value="${w}" ${w===current?'selected':''}>${w}</option>`).join('');
+  if(sel) sel.innerHTML = '<option value="">ทุก Ward</option>' + wards.map(w => `<option value="${w}">${w}</option>`).join('');
 }
 
-// ══ EDIT RECORD ══
-function openEditModal(id) {
-  const r = records.find(rec => rec.id === id);
-  if(!r) { showToast('ไม่พบข้อมูล (record จาก Sheets แก้ไขได้เฉพาะใน Sheets)', 'err'); return; }
-  document.getElementById('edit-record-id').value = id;
-  const map = {
-    'e-name': r.name, 'e-hn': r.hn, 'e-age': r.age,
-    'e-ward': r.ward, 'e-date': r.date, 'e-dx': r.dx,
-    'e-staging': r.staging, 'e-pps': r.pps, 'e-ecog': r.ecog,
-    'e-prognosis': r.prognosis, 'e-underlying': r.underlying,
-    'e-pastTx': r.pastTx, 'e-currentTx': r.currentTx,
-    'e-futurePlan': r.futurePlan, 'e-notes': r.notes, 'e-staff': r.staff
-  };
-  Object.entries(map).forEach(([eid, val]) => {
-    const el = document.getElementById(eid);
-    if(el) el.value = val || '';
-  });
-  document.getElementById('edit-modal-bg').classList.add('open');
-}
-
-function closeEditModal() {
-  document.getElementById('edit-modal-bg').classList.remove('open');
-}
-
-function saveEditRecord() {
-  const id = parseInt(document.getElementById('edit-record-id').value);
-  const idx = records.findIndex(r => r.id === id);
-  if(idx < 0) return;
-  const fields = {
-    name: 'e-name', hn: 'e-hn', age: 'e-age', ward: 'e-ward',
-    date: 'e-date', dx: 'e-dx', staging: 'e-staging', pps: 'e-pps',
-    ecog: 'e-ecog', prognosis: 'e-prognosis', underlying: 'e-underlying',
-    pastTx: 'e-pastTx', currentTx: 'e-currentTx', futurePlan: 'e-futurePlan',
-    notes: 'e-notes', staff: 'e-staff'
-  };
-  Object.entries(fields).forEach(([key, eid]) => {
-    const el = document.getElementById(eid);
-    if(el) records[idx][key] = el.value;
-  });
-  records[idx]._edited = new Date().toLocaleString('th-TH');
-  localStorage.setItem('pal_records', JSON.stringify(records));
-  closeEditModal();
-  renderDashboard();
-  showToast('บันทึกการแก้ไขเรียบร้อย', 'ok');
-}
-
-function deleteRecord() {
-  const id = parseInt(document.getElementById('edit-record-id').value);
-  const r = records.find(rec => rec.id === id);
-  if(!r) return;
-  if(!confirm(`ลบข้อมูลของ "${r.name || r.hn}" ออกจากระบบ?`)) return;
-  records = records.filter(rec => rec.id !== id);
-  localStorage.setItem('pal_records', JSON.stringify(records));
-  closeEditModal();
-  renderDashboard();
-  showToast('ลบข้อมูลเรียบร้อย', 'ok');
-}
-
-document.getElementById('edit-modal-bg').addEventListener('click', e => {
-  if(e.target === e.currentTarget) closeEditModal();
-});
-
-// ══ EXPORT CSV ══
-function exportCSV() {
-  const allRecs = getAllRecords();
-  if(!allRecs.length) { showToast('ยังไม่มีข้อมูลให้ Export', 'err'); return; }
-  const headers = [
-    'แหล่งข้อมูล','ชื่อ-นามสกุล','HN','อายุ','เพศ','Ward','วันที่',
-    'Diagnosis','Staging','Underlying','การรักษาที่ผ่านมา','การรักษาปัจจุบัน',
-    'แผน Primary doctor','Prognosis','ACP','เหตุผลส่งปรึกษา',
-    'PPS (%)','ECOG','ลงชื่อ Staff','หมายเหตุ','Timestamp'
-  ];
-  const rows = allRecs.map(r => [
-    r._source === 'form' ? 'Google Form' : 'เว็บ',
-    r.name||'', r.hn||'', r.age||'', r.sex||'', r.ward||'', r.date||'',
-    r.dx||'', r.staging||'', r.underlying||'', r.pastTx||'', r.currentTx||'',
-    r.futurePlan||'', r.prognosis||'', r.acp||'', r.reason||'',
-    r.pps||'', r.ecog||'', r.staff||'', r.notes||'', r.timestamp||''
-  ].map(cell => `"${String(cell).replace(/"/g,'""')}"`));
-
-  const csv = '\uFEFF' + [headers.map(h => `"${h}"`), ...rows].map(r => r.join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `palliative_consult_${new Date().toISOString().slice(0,10)}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast(`Export CSV สำเร็จ — ${allRecs.length} รายการ`, 'ok');
-}
-
-// ══ TOAST ══
+// ══ TOAST & OTHERS ══
 function showToast(msg, type) {
   const toast = document.getElementById('toast');
-  const icon = document.getElementById('toast-icon');
-  document.getElementById('toast-msg').textContent = msg;
-  icon.className = 'toast-icon ' + (type||'ok');
-  const svgMap = {
-    ok: '<polyline points="2,6 5,9 10,3" stroke-width="2" stroke-linecap="round"/>',
-    err: '<line x1="2" y1="2" x2="10" y2="10" stroke-width="2" stroke-linecap="round"/><line x1="10" y1="2" x2="2" y2="10" stroke-width="2" stroke-linecap="round"/>',
-    load: '<circle cx="6" cy="6" r="4" stroke-width="2"/>'
-  };
-  icon.innerHTML = `<svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2">${svgMap[type||'ok']}</svg>`;
-  toast.classList.add('show');
-  clearTimeout(toast._t);
-  toast._t = setTimeout(() => toast.classList.remove('show'), 3500);
+  if(toast) {
+    document.getElementById('toast-msg').textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
+  }
 }
 
 init();
