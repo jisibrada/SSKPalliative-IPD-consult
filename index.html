@@ -1930,7 +1930,7 @@ function renderPatientTable() {
     return true;
   });
 
-  // 2. ระบบเรียงลำดับ (Sort Logic)
+  // 2. เรียงลำดับ (Sort Logic)
   filtered.sort((a, b) => {
     if (sortVal === 'date-desc') {
       return new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date);
@@ -1949,7 +1949,7 @@ function renderPatientTable() {
     return 0;
   });
 
-  // 3. แสดงผลตาราง (Render)
+  // 3. เริ่มสร้าง HTML สำหรับแสดงผล
   const wrap = document.getElementById('pt-table-wrap');
   if (!wrap) return;
 
@@ -1969,6 +1969,7 @@ function renderPatientTable() {
         <tbody style="font-size:13px;">
   `;
 
+  // 4. วนลูปข้อมูลเพื่อสร้างแถวในตาราง
   filtered.forEach(r => {
     let urgencyIcon = "🟢";
     let urgencyLabel = r.urgency || "ปกติ";
@@ -2005,7 +2006,7 @@ function renderPatientTable() {
   if(badge) badge.innerText = filtered.length;
 }
 
-// --- ฟังก์ชันจัดการปุ่มตั้งค่า ---
+// ══ ฟังก์ชันจัดการปุ่มตั้งค่า ══
 function openSheetModal() {
   const modal = document.getElementById('settings-modal');
   if (modal) modal.style.display = 'flex';
