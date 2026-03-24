@@ -2001,9 +2001,11 @@ function renderPatientTable() {
     `;
   });
 
-} // <--- จบฟังก์ชัน renderPatientTable (บรรทัด 2004)
+const badge = document.getElementById('pt-count-badge');
+  if(badge) badge.innerText = filtered.length;
+} // <--- จบฟังก์ชัน renderPatientTable (ต้องมีอันเดียว)
 
-// --- ฟังก์ชันจัดการปุ่มตั้งค่า ---
+// --- ฟังก์ชันจัดการปุ่มตั้งค่า (ต้องอยู่นอกฟังก์ชันด้านบน) ---
 function openSheetModal() {
   const modal = document.getElementById('settings-modal');
   if (modal) modal.style.display = 'flex';
@@ -2022,9 +2024,8 @@ function saveSettings() {
     location.reload();
   } else {
     alert('กรุณากรอก URL เว็บแอป');
-    }
-  } // <--- ปิดส่วน if (url) { ... } else { ... }
-} // <--- บรรทัดที่ 2010: ปิดฟังก์ชัน saveSettings()  
+  }
+}
 // ══ DATE / WARD FILTER ══
 let activeQuickFilter = 'all';
 
