@@ -1906,17 +1906,15 @@ function renderPatientTable() {
   const toVal = document.getElementById('filter-date-to')?.value || '';
   const wardVal = document.getElementById('filter-ward')?.value || '';
 
-  const filtered = allRecs.filter(r => {
-    // text search
+  // 1. กรองข้อมูล (Filter)
+  let filtered = allRecs.filter(r => {
     if(q && !(
       (r.name||'').toLowerCase().includes(q) ||
       (r.hn||'').toLowerCase().includes(q) ||
       (r.ward||'').toLowerCase().includes(q) ||
       (r.dx||'').toLowerCase().includes(q)
     )) return false;
-    // ward filter
     if(wardVal && r.ward !== wardVal) return false;
-    // date filter
     if(fromVal || toVal) {
       const d = r.date || '';
       if(fromVal && d < fromVal) return false;
@@ -1924,6 +1922,65 @@ function renderPatientTable() {
     }
     return true;
   });
+
+  // ⭐️ 2. เรียงลำดับ: ใหม่ไปเก่า (Sort)
+  // เรียงตาม timestamp ถ้าไม่มีให้ใช้ date
+  filtered.sort((a, b) => {
+    const timeA = new Date(a.timestamp || a.date);
+    const timeB = new Date(b.timestamp || b.date);
+    return timeB - timeA;
+  });
+
+  const wrap = document.getElementById('pt-table-wrap');
+  if (!wrap) return;
+
+  // ⭐️ 3. สร้างตารางและแสดงผลความเร่งด่วน
+  let html = `
+    <div style="overflow-x:auto;">
+      <table style="width:100%; border-collapse:collapse; min-width:800px;">
+        <thead>
+          <tr style="text-align:left; border-bottom:2px solid var(--border1); color:#5f6368; font-size:12px;">
+            <th style="padding:12px 8px;">ความเร่งด่วน</th>
+            <th style="padding:12px 8px;">ชื่อผู้ป่วย / HN</th>
+            <th style="padding:12px 8px;">WARD</th>
+            <th style="padding:12px 8px;">DIAGNOSIS</th>
+            <th style="padding:12px 8px; text-align:center;">PPS</th>
+            <th style="padding:12px 8px;">วันที่ Consult</th>
+          </tr>
+        </thead>
+        <tbody style="font-size:13px;">
+  `;
+
+  filtered.forEach(r => {
+    // กำหนด Emoji และสีตามความเร่งด่วน
+    let urgencyIcon = "🟢";
+    let urgencyLabel = r.urgency || "ปกติ";
+    if (urgencyLabel === "Emergency" || urgencyLabel === "ด่วนมาก") urgencyIcon = "🔴";
+    else if (urgencyLabel === "ด่วน" || urgencyLabel === "Urgency") urgencyIcon = "🟡";
+
+    html += `
+      <tr style="border-bottom:1px solid var(--border2); vertical-align: middle;">
+        <td style="padding:12px 8px; font-weight:bold;">${urgencyIcon} <span style="font-size:11px;">${urgencyLabel}</span></td>
+        <td style="padding:12px 8px;">
+          <div style="font-weight:600; color:var(--primary);">${r.name || '-'}</div>
+          <div style="font-size:11px; color:#70757a;">HN: ${r.hn || '-'}</div>
+        </td>
+        <td style="padding:12px 8px;">${r.ward || '-'}</td>
+        <td style="padding:12px 8px; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${r.dx || '-'}</td>
+        <td style="padding:12px 8px; text-align:center;">
+          <span style="padding:2px 8px; background:#fce8e6; color:#d93025; border-radius:12px; font-weight:bold;">${r.pps || '-'}%</span>
+        </td>
+        <td style="padding:12px 8px; font-size:11px; color:#70757a;">
+          ${new Date(r.timestamp || r.date).toLocaleDateString('th-TH', {day:'2-digit', month:'2-digit', year:'2-digit'})}<br>
+          ${new Date(r.timestamp || r.date).toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'})}
+        </td>
+      </tr>
+    `;
+  });
+
+  html += `</tbody></table></div>`;
+  wrap.innerHTML = html;
+}
 
   // update count badge
   const badge = document.getElementById('pt-count-badge');
