@@ -976,7 +976,13 @@ input[type=range]::-webkit-slider-thumb {
         </div>
         <select id="filter-ward" onchange="renderPatientTable()" style="font-size:12px;padding:5px 9px;border:1px solid var(--border2);border-radius:5px;background:var(--bg);color:var(--text);font-family:var(--font);">
           <option value="">ทุก Ward</option>
-        </select>
+        </select><select id="pt-sort" onchange="renderPatientTable()" style="font-size:12px; padding: 5px; border-radius: 4px; border: 1px solid #ddd; background: white;">
+        <option value="date-desc">🕒 ล่าสุดไปเก่า</option>
+        <option value="date-asc">🕒 เก่าไปล่าสุด</option>
+        <option value="urgency">🔴 ความเร่งด่วน</option>
+        <option value="pps-asc">📉 PPS (น้อยไปมาก)</option>
+        <option value="ward">🏥 วอร์ด (A-Z)</option>
+      </select>
         <input type="text" id="pt-search" placeholder="ค้นหาชื่อ, HN..." oninput="renderPatientTable()" style="font-size:12px;padding:5px 10px;border:1px solid var(--border2);border-radius:5px;background:var(--bg);color:var(--text);font-family:var(--font);flex:1;min-width:130px;">
         <button class="btn-csv" onclick="exportCSV()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
@@ -1905,6 +1911,7 @@ function renderPatientTable() {
   const fromVal = document.getElementById('filter-date-from')?.value || '';
   const toVal = document.getElementById('filter-date-to')?.value || '';
   const wardVal = document.getElementById('filter-ward')?.value || '';
+  const sortVal = document.getElementById('pt-sort')?.value || 'date-desc'; // ดึงค่าจากปุ่ม Sort ที่คุณหมอเพิ่งเพิ่ม
 
   // 1. กรองข้อมูล (Filter)
   let filtered = allRecs.filter(r => {
@@ -1923,17 +1930,32 @@ function renderPatientTable() {
     return true;
   });
 
-  // 2. เรียงลำดับ: ใหม่ไปเก่า (Sort)
+  // ⭐️ 2. ระบบเรียงลำดับ (Sort Logic)
   filtered.sort((a, b) => {
-    const timeA = new Date(a.timestamp || a.date);
-    const timeB = new Date(b.timestamp || b.date);
-    return timeB - timeA;
+    if (sortVal === 'date-desc') {
+      return new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date);
+    } else if (sortVal === 'date-asc') {
+      return new Date(a.timestamp || a.date) - new Date(b.timestamp || b.date);
+    } else if (sortVal === 'pps-asc') {
+      // เรียง PPS น้อยไปมาก (เคสหนักขึ้นก่อน)
+      return (parseInt(a.pps) || 100) - (parseInt(b.pps) || 100);
+    } else if (sortVal === 'ward') {
+      // เรียงตามชื่อวอร์ด
+      return (a.ward || '').localeCompare(b.ward || '', 'th');
+    } else if (sortVal === 'urgency') {
+      // เรียงตามความเร่งด่วน 🔴 -> 🟡 -> 🟢
+      const priority = { "Emergency": 1, "ด่วนมาก": 1, "Urgency": 2, "ด่วน": 2, "ปกติ": 3, "ไม่ด่วน": 3 };
+      const pA = priority[a.urgency] || 4;
+      const pB = priority[b.urgency] || 4;
+      return pA - pB;
+    }
+    return 0;
   });
 
+  // 3. แสดงผลตาราง (Render)
   const wrap = document.getElementById('pt-table-wrap');
   if (!wrap) return;
 
-  // 3. สร้างตารางและแสดงผลความเร่งด่วน
   let html = `
     <div style="overflow-x:auto;">
       <table style="width:100%; border-collapse:collapse; min-width:800px;">
@@ -1953,8 +1975,12 @@ function renderPatientTable() {
   filtered.forEach(r => {
     let urgencyIcon = "🟢";
     let urgencyLabel = r.urgency || "ปกติ";
-    if (urgencyLabel === "Emergency" || urgencyLabel === "ด่วนมาก") urgencyIcon = "🔴";
-    else if (urgencyLabel === "ด่วน" || urgencyLabel === "Urgency") urgencyIcon = "🟡";
+    if (["Emergency", "ด่วนมาก"].includes(urgencyLabel)) urgencyIcon = "🔴";
+    else if (["ด่วน", "Urgency"].includes(urgencyLabel)) urgencyIcon = "🟡";
+
+    const dateObj = new Date(r.timestamp || r.date);
+    const dateStr = isNaN(dateObj) ? "-" : dateObj.toLocaleDateString('th-TH', {day:'2-digit', month:'2-digit', year:'2-digit'});
+    const timeStr = isNaN(dateObj) ? "" : dateObj.toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'});
 
     html += `
       <tr style="border-bottom:1px solid var(--border2); vertical-align: middle;">
@@ -1969,21 +1995,12 @@ function renderPatientTable() {
           <span style="padding:2px 8px; background:#fce8e6; color:#d93025; border-radius:12px; font-weight:bold;">${r.pps || '-'}%</span>
         </td>
         <td style="padding:12px 8px; font-size:11px; color:#70757a;">
-          ${new Date(r.timestamp || r.date).toLocaleDateString('th-TH', {day:'2-digit', month:'2-digit', year:'2-digit'})}<br>
-          ${new Date(r.timestamp || r.date).toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'})}
+          ${dateStr}<br>${timeStr}
         </td>
       </tr>
     `;
   });
 
-  html += '</tbody></table></div>';
-  wrap.innerHTML = html;
-
-  // 4. Update count badge
-  const badge = document.getElementById('pt-count-badge');
-  if(badge) {
-    badge.innerText = filtered.length;
-  }
 } // ปิดฟังก์ชัน renderPatientTable
 
 // --- ฟังก์ชันจัดการปุ่มตั้งค่า (ต้องอยู่นอกฟังก์ชันด้านบน) ---
