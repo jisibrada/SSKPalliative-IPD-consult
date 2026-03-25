@@ -1902,98 +1902,64 @@ function renderDashboard() {
   `;
 
   renderPatientTable();
+  } // <--- ปิดฟังก์ชัน renderDashboard ให้สมบูรณ์
 
-  // ══ ฟังก์ชันแสดงตารางรายชื่อผู้ป่วย (ฉบับแก้ไขสมบูรณ์) ══
+  // ══ 1. ฟังก์ชันแสดงตาราง (เพิ่มปุ่ม View) ══
   function renderPatientTable() {
     populateWardFilter();
     const allRecs = getAllRecords();
     const q = (document.getElementById('pt-search')?.value || '').toLowerCase();
-    const fromVal = document.getElementById('filter-date-from')?.value || '';
-    const toVal = document.getElementById('filter-date-to')?.value || '';
     const wardVal = document.getElementById('filter-ward')?.value || '';
     const sortVal = document.getElementById('pt-sort')?.value || 'date-desc';
 
-    // 1. กรองข้อมูล (Filter)
+    // กรองข้อมูล
     let filtered = allRecs.filter(r => {
       const nameStr = String(r.name || '').toLowerCase();
       const hnStr = String(r.hn || '').toLowerCase();
-      const wardStr = String(r.ward || '').toLowerCase();
-      const dxStr = String(r.dx || '').toLowerCase();
-
-      if(q && !(nameStr.includes(q) || hnStr.includes(q) || wardStr.includes(q) || dxStr.includes(q))) return false;
+      if(q && !(nameStr.includes(q) || hnStr.includes(q))) return false;
       if(wardVal && r.ward !== wardVal) return false;
-      if(fromVal || toVal) {
-        const d = r.date || '';
-        if(fromVal && d < fromVal) return false;
-        if(toVal && d > toVal) return false;
-      }
       return true;
     });
 
-    // 2. เรียงลำดับ (Sort Logic)
+    // เรียงลำดับ
     filtered.sort((a, b) => {
-      if (sortVal === 'date-desc') {
-        return new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date);
-      } else if (sortVal === 'date-asc') {
-        return new Date(a.timestamp || a.date) - new Date(b.timestamp || b.date);
-      } else if (sortVal === 'pps-asc') {
-        return (parseInt(a.pps) || 100) - (parseInt(b.pps) || 100);
-      } else if (sortVal === 'ward') {
-        return (a.ward || '').localeCompare(b.ward || '', 'th');
-      } else if (sortVal === 'urgency') {
-        const priority = { "Emergency": 1, "ด่วนมาก": 1, "Urgency": 2, "ด่วน": 2, "ปกติ": 3, "ไม่ด่วน": 3 };
-        const pA = priority[a.urgency] || 4;
-        const pB = priority[b.urgency] || 4;
-        return pA - pB;
-      }
-      return 0;
+      if (sortVal === 'pps-asc') return (parseInt(a.pps) || 100) - (parseInt(b.pps) || 100);
+      return new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date);
     });
 
-    // 3. เริ่มสร้าง HTML ตาราง
     const wrap = document.getElementById('pt-table-wrap');
     if (!wrap) return;
 
     let html = `
       <div style="overflow-x:auto;">
-        <table style="width:100%; border-collapse:collapse; min-width:800px;">
+        <table style="width:100%; border-collapse:collapse; min-width:850px;">
           <thead>
             <tr style="text-align:left; border-bottom:2px solid var(--border1); color:#5f6368; font-size:12px;">
               <th style="padding:12px 8px;">ความเร่งด่วน</th>
               <th style="padding:12px 8px;">ชื่อผู้ป่วย / HN</th>
               <th style="padding:12px 8px;">WARD</th>
-              <th style="padding:12px 8px;">DIAGNOSIS</th>
               <th style="padding:12px 8px; text-align:center;">PPS</th>
               <th style="padding:12px 8px;">วันที่ Consult</th>
+              <th style="padding:12px 8px; text-align:center;">จัดการ</th>
             </tr>
           </thead>
           <tbody style="font-size:13px;">
     `;
 
-    // 4. ใส่ข้อมูลคนไข้
-    filtered.forEach(r => {
-      let urgencyIcon = "🟢";
-      let urgencyLabel = r.urgency || "ปกติ";
-      if (["Emergency", "ด่วนมาก"].includes(urgencyLabel)) urgencyIcon = "🔴";
-      else if (["ด่วน", "Urgency"].includes(urgencyLabel)) urgencyIcon = "🟡";
-
-      const dateObj = new Date(r.timestamp || r.date);
-      const dateStr = isNaN(dateObj) ? "-" : dateObj.toLocaleDateString('th-TH', {day:'2-digit', month:'2-digit', year:'2-digit'});
-      const timeStr = isNaN(dateObj) ? "" : dateObj.toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'});
+    filtered.forEach((r) => {
+      let icon = (["Emergency", "ด่วนมาก"].includes(r.urgency)) ? "🔴" : (["ด่วน", "Urgency"].includes(r.urgency) ? "🟡" : "🟢");
+      const d = new Date(r.timestamp || r.date);
+      const dateStr = isNaN(d) ? "-" : d.toLocaleDateString('th-TH', {day:'2-digit', month:'2-digit', year:'2-digit'});
 
       html += `
-        <tr style="border-bottom:1px solid var(--border2); vertical-align: middle;">
-          <td style="padding:12px 8px; font-weight:bold;">${urgencyIcon} <span style="font-size:11px;">${urgencyLabel}</span></td>
-          <td style="padding:12px 8px;">
-            <div style="font-weight:600; color:var(--primary);">${r.name || '-'}</div>
-            <div style="font-size:11px; color:#70757a;">HN: ${r.hn || '-'}</div>
-          </td>
+        <tr style="border-bottom:1px solid var(--border2);">
+          <td style="padding:12px 8px;">${icon} <span style="font-size:11px;">${r.urgency || 'ปกติ'}</span></td>
+          <td style="padding:12px 8px;"><b>${r.name || '-'}</b><br><small>HN: ${r.hn || '-'}</small></td>
           <td style="padding:12px 8px;">${r.ward || '-'}</td>
-          <td style="padding:12px 8px; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${r.dx || '-'}</td>
+          <td style="padding:12px 8px; text-align:center;"><span style="color:#d93025; font-weight:bold;">${r.pps || '-'}%</span></td>
+          <td style="padding:12px 8px; font-size:11px;">${dateStr}</td>
           <td style="padding:12px 8px; text-align:center;">
-            <span style="padding:2px 8px; background:#fce8e6; color:#d93025; border-radius:12px; font-weight:bold;">${r.pps || '-'}%</span>
-          </td>
-          <td style="padding:12px 8px; font-size:11px; color:#70757a;">
-            ${dateStr}<br>${timeStr}
+            <button onclick='showConsultDetail(${JSON.stringify(r)})' style="padding:4px 8px; background:var(--primary); color:white; border:none; border-radius:4px; cursor:pointer; font-size:11px;">🔍 ดูข้อมูล</button>
           </td>
         </tr>
       `;
@@ -2001,55 +1967,68 @@ function renderDashboard() {
 
     html += '</tbody></table></div>';
     wrap.innerHTML = html;
-
+    
     const badge = document.getElementById('pt-count-badge');
     if(badge) badge.innerText = filtered.length;
   }
 
+  // ══ 2. ฟังก์ชันโชว์ Modal รายละเอียด (ไว้ Print) ══
+  function showConsultDetail(data) {
+    const modalHtml = `
+      <div id="detail-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; justify-content:center; align-items:center; z-index:9999;">
+        <div style="background:white; width:95%; max-width:750px; max-height:90vh; overflow-y:auto; padding:40px; border-radius:12px; position:relative; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+          <button onclick="document.getElementById('detail-modal').remove()" style="position:absolute; top:20px; right:20px; border:none; background:none; font-size:28px; cursor:pointer; color:#999;">&times;</button>
+          
+          <div id="print-area">
+            <div style="text-align:center; margin-bottom:20px;">
+                <h2 style="margin:0; color:var(--primary);">บันทึกการส่งปรึกษา Palliative Care</h2>
+                <p style="margin:5px 0; color:#666;">โรงพยาบาลศรีสะเกษ</p>
+            </div>
+            <hr style="border:1px solid var(--border1);">
+            <table style="width:100%; border-spacing:0 10px; font-size:15px;">
+              <tr><td width="25%"><b>ชื่อ-นามสกุล:</b></td><td>${data.name || '-'}</td><td width="15%"><b>อายุ:</b></td><td>${data.age || '-'} ปี</td></tr>
+              <tr><td><b>HN:</b></td><td>${data.hn || '-'}</td><td><b>Ward:</b></td><td>${data.ward || '-'}</td></tr>
+              <tr><td><b>วันที่ Consult:</b></td><td colspan="3">${data.date || '-'}</td></tr>
+              <tr><td colspan="4"><hr style="border:0.5px dashed #ccc;"></td></tr>
+              <tr><td valign="top"><b>Diagnosis:</b></td><td colspan="3">${data.dx || '-'}</td></tr>
+              <tr><td><b>PPS Score:</b></td><td><span style="color:#d93025; font-weight:bold;">${data.pps || '-'}%</span></td><td><b>ECOG:</b></td><td>${data.ecog || '-'}</td></tr>
+              <tr><td valign="top"><b>ประวัติการรักษา:</b></td><td colspan="3">${data.pastTx || '-'}</td></tr>
+              <tr><td valign="top"><b>แผนการดูแล:</b></td><td colspan="3">${data.futurePlan || '-'}</td></tr>
+              <tr><td valign="top"><b>เหตุผลที่ส่ง:</b></td><td colspan="3">${data.reason || '-'}</td></tr>
+              <tr><td valign="top"><b>หมายเหตุ:</b></td><td colspan="3">${data.notes || '-'}</td></tr>
+            </table>
+            <div style="margin-top:40px; text-align:right;">
+                <p>ลงชื่อ............................................................ผู้บันทึก</p>
+                <p>(${data.staff || '................................................'})</p>
+            </div>
+          </div>
+
+          <div style="margin-top:30px; display:flex; justify-content:flex-end; gap:10px;" class="no-print">
+            <button onclick="window.print()" style="padding:10px 25px; background:var(--primary); color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">🖨️ พิมพ์เอกสาร / PDF</button>
+            <button onclick="document.getElementById('detail-modal').remove()" style="padding:10px 25px; background:#f1f3f4; border:none; border-radius:6px; cursor:pointer;">ปิด</button>
+          </div>
+        </div>
+      </div>
+      <style>
+        @media print {
+          body * { visibility: hidden; }
+          #print-area, #print-area * { visibility: visible; }
+          #print-area { position: fixed; left: 0; top: 0; width: 100%; padding: 20px; }
+          .no-print { display: none; }
+        }
+      </style>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+  }
+
   // --- ฟังก์ชันเสริมส่วนท้าย ---
-  function openSheetModal() {
-    const modal = document.getElementById('settings-modal');
-    if (modal) modal.style.display = 'flex';
-  }
-  function closeSettings() {
-    const modal = document.getElementById('settings-modal');
-    if (modal) modal.style.display = 'none';
-  }
-  function saveSettings() {
-    const url = document.getElementById('webapp-url')?.value.trim();
-    if (url) {
-      localStorage.setItem('palliative_webapp_url', url);
-      alert('บันทึกสำเร็จ');
-      location.reload();
-    }
-  }
-  function setQuickFilter(type) {
-    const fmt = d => d.toISOString().split('T')[0];
-    const today = new Date();
-    if(type === 'today') {
-      document.getElementById('filter-date-from').value = fmt(today);
-      document.getElementById('filter-date-to').value = fmt(today);
-    } else if(type === 'all') {
-      document.getElementById('filter-date-from').value = '';
-      document.getElementById('filter-date-to').value = '';
-    }
-    renderPatientTable();
-  }
   function populateWardFilter() {
     const wards = [...new Set(getAllRecords().map(r => r.ward).filter(Boolean))].sort();
     const sel = document.getElementById('filter-ward');
     if(sel) sel.innerHTML = '<option value="">ทุก Ward</option>' + wards.map(w => `<option value="${w}">${w}</option>`).join('');
   }
-  function showToast(msg, type) {
-    const toast = document.getElementById('toast');
-    if(toast) {
-      document.getElementById('toast-msg').textContent = msg;
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 3000);
-    }
-  }
 
   init();
-  </script>
-  </body>
-  </html>
+</script>
+</body>
+</html>
