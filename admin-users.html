@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>จัดการผู้ใช้ · ศูนย์ปันรักษ์</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Kanit:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#2b2333; --ink2:#6b5f74; --ink3:#a99fb2;
+  --rose:#d81b7a; --rose-d:#b01463; --blue:#1e5aa8; --sage:#0d9488; --amber:#c2770c;
+  --line:#ece6f0; --cream:#fffdf9;
+}
+body{font-family:'Sarabun',sans-serif;color:var(--ink);line-height:1.6;
+  background:radial-gradient(1200px 520px at 50% -8%,#fbe3ef 0%,rgba(251,227,239,0) 60%),linear-gradient(165deg,#fdf4f9 0%,#eef3fb 100%);
+  min-height:100vh;padding:24px 16px 70px}
+.wrap{max-width:820px;margin:0 auto}
+h1,h2,h3,.k{font-family:'Kanit',sans-serif}
+
+/* hero */
+.hero{text-align:center;padding:16px 12px 24px}
+.mark{width:82px;height:82px;margin:0 auto 12px;border-radius:24px;background:#fff;display:grid;place-items:center;
+  padding:11px;box-shadow:0 16px 38px rgba(216,27,122,.22);font-size:38px}
+.kicker{font-family:'Kanit';font-size:12.5px;font-weight:600;letter-spacing:.16em;color:var(--rose);margin-bottom:6px}
+.hero h1{font-size:30px;font-weight:800;color:var(--ink);margin-bottom:4px}
+.hero h1 span{color:var(--rose)}
+.hero p{color:var(--ink2);font-size:15px}
+
+/* card */
+.card{background:var(--cream);border:1px solid var(--line);border-radius:22px;padding:26px 24px;margin-bottom:20px;
+  box-shadow:0 8px 26px rgba(74,40,90,.06)}
+.card-h{display:flex;align-items:center;gap:11px;margin-bottom:18px;padding-bottom:12px;border-bottom:1.5px solid var(--line)}
+.dot{width:11px;height:11px;border-radius:50%;background:linear-gradient(140deg,#ff4fa3,#d81b7a);box-shadow:0 3px 8px rgba(216,27,122,.3)}
+.card-h h2{font-size:18px;font-weight:700}
+
+/* fields */
+.fg{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+label.fl{font-family:'Kanit';font-size:14px;font-weight:500;color:var(--ink2)}
+input,select{font-family:'Sarabun';font-size:16px;padding:12px 14px;border:1.6px solid #e3dceb;border-radius:13px;
+  background:#fff;color:var(--ink);width:100%;transition:.15s}
+input::placeholder{color:#c3bacd}
+input:focus,select:focus{outline:none;border-color:var(--rose);box-shadow:0 0 0 4px rgba(216,27,122,.10)}
+.hint{font-size:12.5px;color:var(--ink3)}
+.hint.bad{color:#dc2626}
+.hint.good{color:#0f766e}
+.email-preview{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--blue);background:#eef3fb;
+  border-radius:9px;padding:5px 10px;display:inline-block;margin-top:2px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:560px){.grid2{grid-template-columns:1fr}}
+
+/* buttons */
+.btn{font-family:'Kanit';font-weight:700;font-size:15.5px;border:none;border-radius:13px;padding:13px 22px;cursor:pointer;transition:.14s}
+.btn-rose{background:linear-gradient(140deg,#ff4fa3,#d81b7a);color:#fff;box-shadow:0 10px 24px rgba(216,27,122,.28)}
+.btn-rose:hover{transform:translateY(-1px)}
+.btn-rose:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-ghost{background:#fff;border:1.5px solid var(--line);color:var(--ink2);font-weight:600}
+.btn-ghost:hover{border-color:var(--rose);color:var(--rose)}
+.btn-sm{font-size:13px;padding:7px 12px;border-radius:10px}
+
+/* msg */
+.msg{font-size:13.5px;font-weight:600;min-height:20px;margin-top:10px}
+.msg.err{color:#dc2626}.msg.ok{color:#0f766e}.msg.info{color:var(--ink2)}
+
+/* user list */
+.u-row{display:flex;align-items:center;gap:12px;padding:14px 4px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.u-row:last-child{border-bottom:none}
+.u-av{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-family:'Kanit';font-weight:800;
+  color:#fff;font-size:17px;flex-shrink:0;background:linear-gradient(140deg,#3f8ee0,#1e5aa8)}
+.u-av.ward{background:linear-gradient(140deg,#ff4fa3,#d81b7a)}
+.u-av.team{background:linear-gradient(140deg,#3f8ee0,#1e5aa8)}
+.u-av.admin{background:linear-gradient(140deg,#0fbfa8,#0d9488)}
+.u-main{flex:1;min-width:150px}
+.u-name{font-family:'Kanit';font-weight:700;font-size:15.5px}
+.u-mail{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink3)}
+.u-ctrl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.u-ctrl select{width:auto;font-size:13px;padding:7px 10px;border-radius:10px}
+.badge{font-family:'Kanit';font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:20px}
+.badge.on{background:#dcfce7;color:#15803d}
+.badge.off{background:#fee2e2;color:#b91c1c}
+.pill-toggle{cursor:pointer;user-select:none;border:1.5px solid var(--line);border-radius:20px;padding:5px 12px;font-size:12.5px;font-weight:700;font-family:'Kanit'}
+.pill-toggle.on{background:#effcf9;border-color:#9fe6da;color:#0f766e}
+.pill-toggle.off{background:#fff1f1;border-color:#f3b0b0;color:#b91c1c}
+.note{font-size:12.5px;color:var(--ink3);line-height:1.6;margin-top:14px;padding:12px 14px;background:#fbf8fc;border:1px dashed #e0d6ea;border-radius:12px}
+.gate-hidden{display:none}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px;color:var(--ink2)}
+.who{font-family:'Kanit';font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="mark">🔐</div>
+    <div class="kicker">ADMIN · ศูนย์ปันรักษ์</div>
+    <h1>จัดการ<span>ผู้ใช้</span></h1>
+    <p>เพิ่มผู้ใช้ · ตั้งสิทธิ์ (role) · เปิด/ปิดการใช้งาน</p>
+  </div>
+
+  <!-- ===== LOGIN ===== -->
+  <div id="login-card" class="card" style="max-width:400px;margin-left:auto;margin-right:auto">
+    <div class="card-h"><span class="dot"></span><h2>เข้าสู่ระบบผู้ดูแล</h2></div>
+    <div class="fg">
+      <label class="fl">ชื่อผู้ใช้ (User)</label>
+      <input id="lg-user" type="text" autocomplete="username" placeholder="เช่น admin">
+    </div>
+    <div class="fg">
+      <label class="fl">รหัสผ่าน</label>
+      <input id="lg-pass" type="password" autocomplete="current-password" placeholder="password">
+    </div>
+    <button id="lg-btn" class="btn btn-rose" style="width:100%">เข้าสู่ระบบ</button>
+    <div id="lg-msg" class="msg"></div>
+    <div class="note">ต้องเป็นบัญชีที่มีสิทธิ์ <b>admin</b> เท่านั้นจึงจะจัดการผู้ใช้ได้</div>
+  </div>
+
+  <!-- ===== ADMIN PANEL ===== -->
+  <div id="admin-panel" class="gate-hidden">
+    <div class="topbar">
+      <span class="who" id="who"></span>
+      <button class="btn btn-ghost btn-sm" onclick="doLogout()">ออกจากระบบ</button>
+    </div>
+
+    <!-- add user -->
+    <div class="card">
+      <div class="card-h"><span class="dot"></span><h2>เพิ่มผู้ใช้ใหม่</h2></div>
+      <div class="grid2">
+        <div class="fg">
+          <label class="fl">ชื่อผู้ใช้ (User)</label>
+          <input id="nu-user" type="text" placeholder="เช่น ward, team, sirada">
+          <span class="email-preview" id="nu-email">—</span>
+        </div>
+        <div class="fg">
+          <label class="fl">ชื่อ-สกุล</label>
+          <input id="nu-name" type="text" placeholder="ชื่อที่แสดงในระบบ">
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="fg">
+          <label class="fl">สิทธิ์ (role)</label>
+          <select id="nu-role">
+            <option value="ward">ward — เจ้าหน้าที่วอร์ด (เข้า index)</option>
+            <option value="team">team — ทีม PC (เข้า team)</option>
+            <option value="admin">admin — ผู้ดูแล (เข้า team + จัดการผู้ใช้)</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label class="fl">รหัสผ่าน</label>
+          <input id="nu-pass" type="text" placeholder="อย่างน้อย 6 ตัวอักษร">
+          <span class="hint" id="nu-pass-hint">อย่างน้อย 6 ตัวอักษร (Firebase บังคับ)</span>
+        </div>
+      </div>
+      <button id="nu-btn" class="btn btn-rose" style="width:100%">สร้างผู้ใช้</button>
+      <div id="nu-msg" class="msg"></div>
+    </div>
+
+    <!-- user list -->
+    <div class="card">
+      <div class="card-h"><span class="dot"></span><h2>ผู้ใช้ทั้งหมด</h2></div>
+      <div id="u-list"><div class="msg info">กำลังโหลด...</div></div>
+      <div class="note">
+        • <b>เปิด/ปิดใช้งาน</b> = กดปุ่มสถานะ (ปิดแล้วผู้ใช้จะเข้าระบบไม่ได้ทันที)<br>
+        • <b>ลบสิทธิ์</b> = ลบโปรไฟล์ออกจาก Firestore ผู้ใช้จะเข้าไม่ได้ แต่บัญชี Authentication ยังอยู่ (ถ้าต้องการลบถาวรต้องลบใน Firebase Console → Authentication)<br>
+        • <b>เปลี่ยนรหัสผ่านให้คนอื่น</b> ทำจากหน้านี้ไม่ได้ (ข้อจำกัดฝั่ง client) — ทำได้ที่ Firebase Console → Authentication → เลือกผู้ใช้ → Reset password
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  var firebaseConfig = {
+    apiKey: "AIzaSyCrMbPuSgSuP_SpQ_jpj7OC9OGYnLamHCs",
+    authDomain: "pc-center-ef83d.firebaseapp.com",
+    projectId: "pc-center-ef83d",
+    storageBucket: "pc-center-ef83d.firebasestorage.app",
+    messagingSenderId: "264238393124",
+    appId: "1:264238393124:web:27170d104c32a4576b35b1",
+    measurementId: "G-GWEKJQCQS2"
+  };
+  var app  = firebase.initializeApp(firebaseConfig);
+  var auth = firebase.auth();
+  var db   = firebase.firestore();
+  var DOMAIN = '@pccenter.local';
+  var meRole = null, unsub = null;
+
+  function $(id){ return document.getElementById(id); }
+  function userToEmail(u){ u = (u||'').trim(); return u.indexOf('@')===-1 ? u + DOMAIN : u; }
+  function emailToUser(e){ e = e||''; return e.indexOf(DOMAIN)>-1 ? e.slice(0, e.length-DOMAIN.length) : e; }
+
+  // ---------- LOGIN ----------
+  function doLogin(){
+    var u = $('lg-user').value.trim();
+    var p = $('lg-pass').value;
+    var m = $('lg-msg');
+    if (!u || !p){ m.className='msg err'; m.textContent='กรอกชื่อผู้ใช้และรหัสผ่าน'; return; }
+    m.className='msg info'; m.textContent='กำลังเข้าสู่ระบบ...';
+    auth.signInWithEmailAndPassword(userToEmail(u), p).catch(function(e){
+      m.className='msg err';
+      m.textContent = (e.code==='auth/invalid-credential') ? 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'
+                    : (e.code==='auth/network-request-failed') ? 'เชื่อมต่อไม่ได้ — เปิดผ่าน https'
+                    : 'เข้าสู่ระบบไม่สำเร็จ: ' + e.code;
+    });
+  }
+  window.doLogout = function(){ if (unsub){ unsub(); unsub=null; } auth.signOut(); };
+
+  auth.onAuthStateChanged(function(user){
+    var m = $('lg-msg');
+    if (!user){
+      meRole = null;
+      $('login-card').classList.remove('gate-hidden');
+      $('admin-panel').classList.add('gate-hidden');
+      $('lg-pass').value='';
+      return;
+    }
+    db.collection('users').doc(user.uid).get().then(function(snap){
+      var prof = snap.exists ? snap.data() : null;
+      if (!prof || prof.active !== true || prof.role !== 'admin'){
+        m.className='msg err';
+        m.innerHTML = 'บัญชีนี้ไม่มีสิทธิ์ผู้ดูแล (admin)'
+          + '<div style="margin-top:12px">'
+          + '<a href="team-firebase.html" style="display:inline-block;background:linear-gradient(140deg,#3f8ee0,#1e5aa8);color:#fff;font-family:Kanit,sans-serif;font-weight:700;padding:10px 18px;border-radius:12px;text-decoration:none">ไปหน้าทีม PC →</a>'
+          + ' &nbsp; <a href="#" onclick="firebase.auth().signOut();return false;" style="color:#6b5f74;font-weight:600;text-decoration:underline">ออกจากระบบ</a>'
+          + '</div>';
+        $('login-card').classList.remove('gate-hidden');
+        $('admin-panel').classList.add('gate-hidden');
+        return;
+      }
+      meRole = 'admin';
+      $('who').textContent = '👤 ' + (prof.name || emailToUser(user.email)) + ' · admin';
+      $('login-card').classList.add('gate-hidden');
+      $('admin-panel').classList.remove('gate-hidden');
+      watchUsers();
+    }).catch(function(e){
+      m.className='msg err';
+      m.innerHTML = 'อ่านข้อมูลไม่สำเร็จ — ตรวจ Security Rules (ต้องให้ admin อ่าน/เขียน users ได้)';
+    });
+  });
+
+  // ---------- ADD USER (secondary app so admin stays logged in) ----------
+  function refreshEmailPreview(){
+    var u = $('nu-user').value.trim();
+    $('nu-email').textContent = u ? userToEmail(u) : '—';
+  }
+  function checkPass(){
+    var p = $('nu-pass').value, h = $('nu-pass-hint');
+    if (!p){ h.className='hint'; h.textContent='อย่างน้อย 6 ตัวอักษร (Firebase บังคับ)'; }
+    else if (p.length < 6){ h.className='hint bad'; h.textContent='สั้นเกินไป — ต้องอย่างน้อย 6 ตัวอักษร'; }
+    else { h.className='hint good'; h.textContent='ใช้ได้ ✓'; }
+  }
+
+  function addUser(){
+    var u = $('nu-user').value.trim();
+    var name = $('nu-name').value.trim();
+    var role = $('nu-role').value;
+    var pass = $('nu-pass').value;
+    var m = $('nu-msg');
+    if (!u){ m.className='msg err'; m.textContent='กรอกชื่อผู้ใช้'; return; }
+    if (pass.length < 6){ m.className='msg err'; m.textContent='รหัสผ่านต้องอย่างน้อย 6 ตัวอักษร'; return; }
+    var email = userToEmail(u);
+    m.className='msg info'; m.textContent='กำลังสร้างผู้ใช้...';
+    $('nu-btn').disabled = true;
+
+    // ใช้แอปตัวที่สอง เพื่อไม่ให้ admin หลุด login
+    var secondary = firebase.initializeApp(firebaseConfig, 'secondary-' + Date.now());
+    secondary.auth().createUserWithEmailAndPassword(email, pass)
+      .then(function(cred){
+        var uid = cred.user.uid;
+        return db.collection('users').doc(uid).set({
+          username: u, email: email, name: name || u, role: role, active: true,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      })
+      .then(function(){
+        m.className='msg ok'; m.textContent='สร้างผู้ใช้ "' + u + '" (' + role + ') สำเร็จ ✓';
+        $('nu-user').value=''; $('nu-name').value=''; $('nu-pass').value='';
+        refreshEmailPreview(); checkPass();
+      })
+      .catch(function(e){
+        m.className='msg err';
+        m.textContent = (e.code==='auth/email-already-in-use') ? 'ชื่อผู้ใช้นี้มีอยู่แล้ว'
+                      : (e.code==='auth/weak-password') ? 'รหัสผ่านสั้นเกินไป (อย่างน้อย 6 ตัว)'
+                      : (e.code==='auth/invalid-email') ? 'ชื่อผู้ใช้มีอักขระไม่ถูกต้อง'
+                      : 'สร้างไม่สำเร็จ: ' + e.code;
+      })
+      .finally(function(){
+        $('nu-btn').disabled = false;
+        try { secondary.auth().signOut(); } catch(e){}
+        try { secondary.delete(); } catch(e){}
+      });
+  }
+
+  // ---------- USER LIST ----------
+  function watchUsers(){
+    if (unsub) unsub();
+    unsub = db.collection('users').onSnapshot(function(qs){
+      var rows = [];
+      qs.forEach(function(d){ rows.push(Object.assign({ _id: d.id }, d.data())); });
+      rows.sort(function(a,b){
+        var ra = {admin:0, team:1, ward:2}[a.role] ?? 3, rb = {admin:0, team:1, ward:2}[b.role] ?? 3;
+        if (ra!==rb) return ra-rb;
+        return (a.name||'').localeCompare(b.name||'','th');
+      });
+      renderUsers(rows);
+    }, function(err){
+      $('u-list').innerHTML = '<div class="msg err">โหลดรายชื่อไม่สำเร็จ — ตรวจ Security Rules (list users)</div>';
+    });
+  }
+
+  function renderUsers(rows){
+    if (!rows.length){ $('u-list').innerHTML = '<div class="msg info">ยังไม่มีผู้ใช้</div>'; return; }
+    var me = auth.currentUser ? auth.currentUser.uid : '';
+    $('u-list').innerHTML = rows.map(function(r){
+      var role = r.role || 'ward';
+      var initial = (r.name || r.username || '?').trim().charAt(0).toUpperCase();
+      var mail = r.email || (r.username ? userToEmail(r.username) : '(สร้างจาก Console)');
+      var isMe = r._id === me;
+      var active = r.active === true;
+      return '<div class="u-row">' +
+        '<div class="u-av '+role+'">'+initial+'</div>' +
+        '<div class="u-main">' +
+          '<div class="u-name">'+ (r.name || r.username || '(ไม่มีชื่อ)') + (isMe?' · (คุณ)':'') +'</div>' +
+          '<div class="u-mail">'+ mail +'</div>' +
+        '</div>' +
+        '<div class="u-ctrl">' +
+          '<select onchange="chRole(\''+r._id+'\', this.value)" '+(isMe?'disabled':'')+'>' +
+            ['ward','team','admin'].map(function(x){ return '<option value="'+x+'"'+(x===role?' selected':'')+'>'+x+'</option>'; }).join('') +
+          '</select>' +
+          '<span class="pill-toggle '+(active?'on':'off')+'" onclick="'+(isMe?'':'chActive(\''+r._id+'\','+(!active)+')')+'">'+(active?'● เปิดใช้งาน':'○ ปิดอยู่')+'</span>' +
+          (isMe?'':'<button class="btn btn-ghost btn-sm" onclick="delUser(\''+r._id+'\',\''+((r.name||r.username||'')+'').replace(/\'/g,'')+'\')">ลบสิทธิ์</button>') +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  window.chRole = function(uid, role){
+    db.collection('users').doc(uid).update({ role: role }).catch(function(e){ alert('เปลี่ยน role ไม่สำเร็จ: '+e.code); });
+  };
+  window.chActive = function(uid, val){
+    db.collection('users').doc(uid).update({ active: val }).catch(function(e){ alert('เปลี่ยนสถานะไม่สำเร็จ: '+e.code); });
+  };
+  window.delUser = function(uid, name){
+    if (!confirm('ลบสิทธิ์ของ "'+name+'" ?\nผู้ใช้จะเข้าระบบไม่ได้ (บัญชี Authentication ยังอยู่ ต้องลบใน Console หากต้องการลบถาวร)')) return;
+    db.collection('users').doc(uid).delete().catch(function(e){ alert('ลบไม่สำเร็จ: '+e.code); });
+  };
+
+  // ---------- wire ----------
+  document.addEventListener('DOMContentLoaded', function(){
+    $('lg-btn').addEventListener('click', doLogin);
+    $('lg-pass').addEventListener('keydown', function(e){ if (e.key==='Enter') doLogin(); });
+    $('nu-user').addEventListener('input', refreshEmailPreview);
+    $('nu-pass').addEventListener('input', checkPass);
+    $('nu-btn').addEventListener('click', addUser);
+  });
+})();
+</script>
+</body>
+</html>
